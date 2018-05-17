@@ -215,8 +215,6 @@ module Kitchen
         when 'rhel', 'centos', 'fedora'
           <<-eos
             ENV container docker
-            RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
-            RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N ''
             RUN yum clean all && \\
                 yum install -y sudo openssh-server openssh-clients which curl
           eos
@@ -224,15 +222,11 @@ module Kitchen
           <<-eos
             ENV container docker
             RUN zypper install -y sudo openssh which curl
-            RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
-            RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N ''
           eos
         when 'arch'
           # See https://bugs.archlinux.org/task/47052 for why we
           # blank out limits.conf.
           <<-eos
-            RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -A -t rsa -f /etc/ssh/ssh_host_rsa_key
-            RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -A -t dsa -f /etc/ssh/ssh_host_dsa_key
             RUN pacman --noconfirm -Sy archlinux-keyring && \\
                 pacman-db-upgrade && \\
                 pacman --noconfirm -Sy openssl openssh sudo curl
@@ -242,15 +236,11 @@ module Kitchen
           <<-eos
             RUN emerge --sync && \\
                 emerge net-misc/openssh app-admin/sudo
-            RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -A -t rsa -f /etc/ssh/ssh_host_rsa_key
-            RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -A -t dsa -f /etc/ssh/ssh_host_dsa_key
           eos
         when 'gentoo-paludis'
           <<-eos
             RUN cave sync && \\
                 cave resolve -zx net-misc/openssh app-admin/sudo
-            RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -A -t rsa -f /etc/ssh/ssh_host_rsa_key
-            RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -A -t dsa -f /etc/ssh/ssh_host_dsa_key
           eos
         else
           raise ActionFailed,
@@ -278,7 +268,13 @@ module Kitchen
         Array(config[:provision_command]).each do |cmd|
           custom << "RUN #{cmd}\n"
         end
-        ssh_key = "RUN echo #{Shellwords.escape(public_key)} >> #{homedir}/.ssh/authorized_keys"
+
+        ssh_key = <<-eos
+          RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -A -t rsa -f /etc/ssh/ssh_host_rsa_key
+          RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -A -t dsa -f /etc/ssh/ssh_host_dsa_key
+          RUN echo #{Shellwords.escape(public_key)} >> #{homedir}/.ssh/authorized_keys
+        eos
+
         # Empty string to ensure the file ends with a newline.
         [from, env_variables, platform, base, custom, ssh_key, ''].join("\n")
       end
