@@ -208,17 +208,17 @@ module Kitchen
           packages = <<-eos
             ENV DEBIAN_FRONTEND noninteractive
             ENV container docker
-            RUN apt-get update
-            RUN apt-get install -y sudo openssh-server curl lsb-release
+            RUN apt-get update && \\
+                apt-get install -y sudo openssh-server curl lsb-release
           eos
           config[:disable_upstart] ? disable_upstart + packages : packages
         when 'rhel', 'centos', 'fedora'
           <<-eos
             ENV container docker
-            RUN yum clean all
-            RUN yum install -y sudo openssh-server openssh-clients which curl
             RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N ''
             RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key -N ''
+            RUN yum clean all && \\
+                yum install -y sudo openssh-server openssh-clients which curl
           eos
         when 'opensuse', 'sles'
           <<-eos
@@ -231,24 +231,24 @@ module Kitchen
           # See https://bugs.archlinux.org/task/47052 for why we
           # blank out limits.conf.
           <<-eos
-            RUN pacman --noconfirm -Sy archlinux-keyring
-            RUN pacman-db-upgrade
-            RUN pacman --noconfirm -Sy openssl openssh sudo curl
             RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -A -t rsa -f /etc/ssh/ssh_host_rsa_key
             RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -A -t dsa -f /etc/ssh/ssh_host_dsa_key
+            RUN pacman --noconfirm -Sy archlinux-keyring && \\
+                pacman-db-upgrade && \\
+                pacman --noconfirm -Sy openssl openssh sudo curl
             RUN echo >/etc/security/limits.conf
           eos
         when 'gentoo'
           <<-eos
-            RUN emerge --sync
-            RUN emerge net-misc/openssh app-admin/sudo
+            RUN emerge --sync && \\
+                emerge net-misc/openssh app-admin/sudo
             RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -A -t rsa -f /etc/ssh/ssh_host_rsa_key
             RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -A -t dsa -f /etc/ssh/ssh_host_dsa_key
           eos
         when 'gentoo-paludis'
           <<-eos
-            RUN cave sync
-            RUN cave resolve -zx net-misc/openssh app-admin/sudo
+            RUN cave sync && \\
+                cave resolve -zx net-misc/openssh app-admin/sudo
             RUN [ -f "/etc/ssh/ssh_host_rsa_key" ] || ssh-keygen -A -t rsa -f /etc/ssh/ssh_host_rsa_key
             RUN [ -f "/etc/ssh/ssh_host_dsa_key" ] || ssh-keygen -A -t dsa -f /etc/ssh/ssh_host_dsa_key
           eos
