@@ -255,14 +255,13 @@ module Kitchen
           RUN if ! getent passwd #{username}; then \
                 useradd -d #{homedir} -m -s /bin/bash -p '*' #{username}; \
               fi
-          RUN echo "#{username} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-          RUN echo "Defaults !requiretty" >> /etc/sudoers
           RUN mkdir -p #{homedir}/.ssh
           RUN chown -R #{username} #{homedir}/.ssh
           RUN chmod 0700 #{homedir}/.ssh
           RUN touch #{homedir}/.ssh/authorized_keys
           RUN chown #{username} #{homedir}/.ssh/authorized_keys
           RUN chmod 0600 #{homedir}/.ssh/authorized_keys
+          RUN echo -e "#{username} ALL=(ALL) NOPASSWD: ALL\nDefaults !requiretty" >> /etc/sudoers
         eos
         custom = ''
         Array(config[:provision_command]).each do |cmd|
